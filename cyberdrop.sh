@@ -1,5 +1,5 @@
 #!/bin/bash
-# adding a comment
+
 MAX=5 # change this to download more simultaneously
 
 dep_ck () {
