@@ -1,6 +1,7 @@
 #!/bin/bash
 
-MAX=5 # change this to download more simultaneously
+VERSION="0.1"
+MAX=5
 
 dep_ck () {
     for dep; do
@@ -70,13 +71,17 @@ while true; do
 			usage
 			exit
 			;;
+		--version | -v)
+			echo $VERSION
+			exit
+			;;
 		--count | -c)
 			MAX=$2
 			shift 2
 			break
 			;;
 		-*)
-			echo "Wrong option $1"
+			echo "Wrong option: $1 (--help, -h to view options.)"
 			exit
 			;;
 	esac
