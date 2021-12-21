@@ -26,13 +26,16 @@ EOF
 main () {
 	dep_ck "aria2c" "pup" "curl"
 
-	[[ -z $@ ]] && { echo -n "Enter link: "; read sauce; } || sauce="$@"
+	[[ -z "$@" ]] && { echo -n "Enter link: "; read sauce; } || sauce="$@"
 	[[ -z $sauce ]] && { echo "[-] No links given."; exit 1; }
+
 	for i in ${sauce[@]}; do
+
 		if [[ ! $(curl -s -LI $i | head -1) =~ 200 ]]; then
 			echo "[-] Wrong link :: $i";
 			continue;
 		fi
+
 		html=$(curl -s $i)
 		title=$(echo $html | pup 'h1#title attr{title}')
 		tmp=$(echo $html | pup 'p.title text{}')
@@ -41,17 +44,22 @@ main () {
 		links=$(echo $html |\
 			pup 'a.image attr{href}' |\
 			sed 's/[[:space:]]/\%20/g')
+
 		if [[ -d "$title" ]] && [[ ! -z $(ls -A "$title") ]]; then
 			echo "[-] Already Downloaded :: $title [$i]";
 			continue;
 		fi
+
 		printf "[*] Downloading :: [Album: $title :: $files :: $size]" && mkdir -p "$title"
 		echo $links |\
 			sed 's/[[:space:]]/\n/g' |\
 			xargs -P $MAX -I{} aria2c -q -x 5 -d "$title" {}
-	#	printf "\033[A\33[2K%s\n" "[+] Downloaded [Album: $title :: $files :: $size]" use this when new line
+	#	Use this when new line
+	#	printf "\033[A\33[2K%s\n" "[+] Downloaded [Album: $title :: $files :: $size]"
 		printf "\33[2K\r%s\n" "[+] Downloaded [Album: $title :: $files :: $size]"
-	#	printf "%-100s\r" "[+] Downloaded [Album: $title :: $files :: $size]" use when what fixed length output
+		sleep 1
+	#	Use when what fixed length output
+	#	printf "%-100s\r" "[+] Downloaded [Album: $title :: $files :: $size]"
 		unset html title tmp files size links
 	done
 }
@@ -63,8 +71,8 @@ while true; do
 			exit
 			;;
 		--count | -c)
-			shift
-			MAX=$1
+			MAX=$2
+			shift 2
 			break
 			;;
 		-*)
@@ -72,7 +80,6 @@ while true; do
 			exit
 			;;
 	esac
-	shift
 done
 
 main "$@"
