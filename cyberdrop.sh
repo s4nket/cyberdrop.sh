@@ -14,14 +14,17 @@ dep_ck () {
 
 usage () {
 	cat <<EOF
-usage:
+Usage:
+	cyberdrop.sh [options] [link]...
+
+Optional arguements:
 	--help, -h		Show this text.
 	--count, -c		Specify the number of parallel downloads (default 5).
 EOF
 }
 
 main () {
-	dep_ck "aria2c" "pup.exe" "curl"
+	dep_ck "aria2c" "pup" "curl"
 
 	[[ -z $@ ]] && { echo -n "Enter link: "; read sauce; } || sauce="$@"
 	[[ -z $sauce ]] && { echo "[-] No links given."; exit 1; }
@@ -31,12 +34,12 @@ main () {
 			continue;
 		fi
 		html=$(curl -s $i)
-		title=$(echo $html | pup.exe 'h1#title attr{title}')
-		tmp=$(echo $html | pup.exe 'p.title text{}')
+		title=$(echo $html | pup 'h1#title attr{title}')
+		tmp=$(echo $html | pup 'p.title text{}')
 		files=$(echo $tmp | awk '{print $1}')
 		size=$(echo $tmp | awk '{print $2" "$3}')
 		links=$(echo $html |\
-			pup.exe 'a.image attr{href}' |\
+			pup 'a.image attr{href}' |\
 			sed 's/[[:space:]]/\%20/g')
 		if [[ -d "$title" ]] && [[ ! -z $(ls -A "$title") ]]; then
 			echo "[-] Already Downloaded :: $title [$i]";
@@ -60,8 +63,8 @@ while true; do
 			exit
 			;;
 		--count | -c)
-			MAX=$2
-			shift 2
+			shift
+			MAX=$1
 			break
 			;;
 		-*)
@@ -69,6 +72,7 @@ while true; do
 			exit
 			;;
 	esac
+	shift
 done
 
 main "$@"
