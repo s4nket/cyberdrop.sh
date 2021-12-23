@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="0.1"
+VERSION="0.2"
 MAX=5
 
 dep_ck () {
@@ -24,67 +24,47 @@ Optional arguements:
 EOF
 }
 
-main () {
-	dep_ck "aria2c" "pup" "curl"
+dep_ck "aria2c" "pup.exe" "curl"
 
-	[[ -z "$@" ]] && { echo -n "Enter link: "; read sauce; } || sauce="$@"
-	[[ -z $sauce ]] && { echo "[-] No links given."; exit 1; }
-
-	for i in ${sauce[@]}; do
-
-		if [[ ! $(curl -s -LI $i | head -1) =~ 200 ]]; then
-			echo "[-] Wrong link :: $i";
-			continue;
-		fi
-
-		html=$(curl -s $i)
-		title=$(echo $html | pup 'h1#title attr{title}')
-		tmp=$(echo $html | pup 'p.title text{}')
-		files=$(echo $tmp | awk '{print $1}')
-		size=$(echo $tmp | awk '{print $2" "$3}')
-		links=$(echo $html |\
-			pup 'a.image attr{href}' |\
-			sed 's/[[:space:]]/\%20/g')
-
-		if [[ -d "$title" ]] && [[ ! -z $(ls -A "$title") ]]; then
-			echo "[-] Already Downloaded :: $title [$i]";
-			continue;
-		fi
-
-		printf "[*] Downloading :: [Album: $title :: $files :: $size]" && mkdir -p "$title"
-		echo $links |\
-			sed 's/[[:space:]]/\n/g' |\
-			xargs -P $MAX -I{} aria2c -q -x 5 -d "$title" {}
-	#	Use this when new line
-	#	printf "\033[A\33[2K%s\n" "[+] Downloaded [Album: $title :: $files :: $size]"
-		printf "\33[2K\r%s\n" "[+] Downloaded [Album: $title :: $files :: $size]"
-		sleep 1
-	#	Use when what fixed length output
-	#	printf "%-100s\r" "[+] Downloaded [Album: $title :: $files :: $size]"
-		unset html title tmp files size links
-	done
-}
-
-while true; do
-	case "$1" in
-		--help | -h)
+while getopts "hvc:" OPT; do
+	case $OPT in
+		h)
 			usage
 			exit
 			;;
-		--version | -v)
+		v)
 			echo $VERSION
 			exit
 			;;
-		--count | -c)
-			MAX=$2
-			shift 2
-			break
-			;;
-		-*)
-			echo "Wrong option: $1 (--help, -h to view options.)"
-			exit
+		c)
+			MAX=$OPTARG
 			;;
 	esac
 done
+shift $((OPTIND - 1))
 
-main "$@"
+[[ -z "$@" ]] && { echo -n "Enter link: "; read sauce; } || sauce="$@"
+[[ -z $sauce ]] && { echo "[-] No links given."; exit 1; }
+
+for i in ${sauce[@]}; do
+		[[ ! $(curl -sLI $i | head -1) =~ 200 ]] && { echo "[-] Wrong link :: $i"; continue; }
+		html=$(curl -s $i)
+	title=$(echo $html | pup 'h1#title attr{title}')
+	[[ -d "$title" ]] && [[ ! -z $(ls -A "$title") ]] && { echo "[-] Already Downloaded :: $title [$i]"; continue; }
+	files=$(echo $html | pup 'p.title text{}' | awk '{print $1}')
+	size=$(echo $html | pup 'p.title text{}' | awk '{print $2" "$3}')
+	links=$(echo $html |\
+		pup 'a.image attr{href}' |\
+		sed 's/[[:space:]]/\%20/g')
+
+	printf "[*] Downloading :: [Album: $title :: $files :: $size]" && mkdir -p "$title"
+	echo $links |\
+		sed 's/[[:space:]]/\n/g' |\
+		xargs -P $MAX -I{} aria2c -q -x 5 -d "$title" {}
+#	Use this when new line
+#	printf "\033[A\33[2K%s\n" "[+] Downloaded [Album: $title :: $files :: $size]"
+	printf "\33[2K\r%s\n" "[+] Downloaded [Album: $title :: $files :: $size]"
+#	Use when what fixed length output
+#	printf "%-100s\r" "[+] Downloaded [Album: $title :: $files :: $size]"
+	unset html title files size links
+done
