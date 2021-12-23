@@ -47,14 +47,16 @@ shift $((OPTIND - 1))
 [[ -z $sauce ]] && { echo "[-] No links given."; exit 1; }
 
 for i in ${sauce[@]}; do
-		[[ ! $(curl -sLI $i | head -1) =~ 200 ]] && { echo "[-] Wrong link :: $i"; continue; }
-		html=$(curl -s $i)
-	title=$(echo $html | pup 'h1#title attr{title}')
+
+	[[ ! $(curl -sLI $i | head -1) =~ 200 ]] && { echo "[-] Wrong link :: $i"; continue; }
+	html=$(curl -s $i)
+	title=$(echo $html | pup.exe 'h1#title attr{title}')
 	[[ -d "$title" ]] && [[ ! -z $(ls -A "$title") ]] && { echo "[-] Already Downloaded :: $title [$i]"; continue; }
-	files=$(echo $html | pup 'p.title text{}' | awk '{print $1}')
-	size=$(echo $html | pup 'p.title text{}' | awk '{print $2" "$3}')
+	tmp=$(echo $html | pup.exe 'p.title text{}')
+	files=$(echo $tmp | awk '{print $1}')
+	size=$(echo $tmp | awk '{print $2" "$3}')
 	links=$(echo $html |\
-		pup 'a.image attr{href}' |\
+		pup.exe 'a.image attr{href}' |\
 		sed 's/[[:space:]]/\%20/g')
 
 	printf "[*] Downloading :: [Album: $title :: $files :: $size]" && mkdir -p "$title"
@@ -67,4 +69,5 @@ for i in ${sauce[@]}; do
 #	Use when what fixed length output
 #	printf "%-100s\r" "[+] Downloaded [Album: $title :: $files :: $size]"
 	unset html title files size links
+
 done
